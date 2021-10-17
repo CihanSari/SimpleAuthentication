@@ -1,8 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const { initDB } = require("./db");
+const { DatabaseController } = require("./server/controllers/db.controller");
 const { getRoutes } = require("./server/routes");
+const { LogController } = require("./server/controllers/log.controller");
 const app = express();
 
 const corsOptions = {
@@ -18,12 +19,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Initialize database
-initDB();
-
-// simple route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the application." });
-});
+DatabaseController.initDB();
 
 // routes
 app.use(getRoutes());
@@ -31,5 +27,5 @@ app.use(getRoutes());
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
+  LogController.logger.info(`Server is running on port ${PORT}.`);
 });

@@ -1,43 +1,32 @@
-const config = require("../config/auth.config");
+const { secret } = require("../config/auth.config");
 const { userModel, roleModel } = require("../models");
 
 const { sign } = require("jsonwebtoken");
 const { hashSync, compareSync } = require("bcryptjs");
 
 class AuthController {
-  static register(req, res) {
-    const user = new User({
-      username: req.body.username,
-      email: req.body.email,
-      password: hashSync(req.body.password, 8),
-    });
-
-    user.save((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
-      }
-
+  static async register(req, res) {
+    try {
+      const user = new userModel({
+        username: req.body.username,
+        email: req.body.email,
+        password: hashSync(req.body.password, 8),
+      });
+      await user.save();
       if (req.body.roles) {
         roleModel.find(
           {
             name: { $in: req.body.roles },
           },
-          (err, roles) => {
+          async (err, roles) => {
             if (err) {
               res.status(500).send({ message: err });
               return;
             }
 
             user.roles = roles.map((role) => role._id);
-            user.save((err) => {
-              if (err) {
-                res.status(500).send({ message: err });
-                return;
-              }
-
-              res.send({ message: "User was registered successfully!" });
-            });
+            await user.save();
+            res.send({ message: "User was registered successfully!" });
           }
         );
       } else {
@@ -58,7 +47,11 @@ class AuthController {
           });
         });
       }
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .send({ location: "auth controller", type: "Database error!", message: err });
+    }
   }
 
   static login(req, res) {

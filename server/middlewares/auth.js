@@ -2,10 +2,34 @@ const { userModel, roleModel } = require("../models");
 const { verify } = require("jsonwebtoken");
 const { secret } = require("../config/auth.config.js");
 
+async function findRole(userRoles, queryRole) {
+  return new Promise((res, rej) => {
+    roleModel.find(
+      {
+        _id: { $in: userRoles },
+      },
+      (err, roles) => {
+        if (err) {
+          rej(err);
+          return;
+        }
+
+        for (let i = 0; i < roles.length; i++) {
+          if (roles[i].name === queryRole) {
+            res(true);
+            return;
+          }
+        }
+        res(false);
+        return;
+      }
+    );
+  });
+}
+
 class AuthMW {
   static verifyToken(req, res, next) {
     const token = req.headers["x-access-token"];
-
     if (!token) {
       return res.status(403).send({ message: "No token provided!" });
     }
@@ -18,65 +42,35 @@ class AuthMW {
       next();
     });
   }
-  static isAdmin(req, res, next) {
-    userModel.findById(req.userId).exec((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
+  static async isAdmin(req, res, next) {
+    try {
+      const user = await userModel.findById(req.userId).exec();
+      const roleFound = await findRole(user.roles, "admin");
+      if (roleFound) {
+        next();
+      } else {
+        res.status(403).send({ message: "Requires Admin Role!" });
       }
-
-      roleModel.find(
-        {
-          _id: { $in: user.roles },
-        },
-        (err, roles) => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
-
-          for (let i = 0; i < roles.length; i++) {
-            if (roles[i].name === "admin") {
-              next();
-              return;
-            }
-          }
-
-          res.status(403).send({ message: "Require Admin Role!" });
-          return;
-        }
-      );
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .send({ location: "auth", type: "Database error!", message: err });
+    }
   }
-  static isModerator(req, res, next) {
-    User.findById(req.userId).exec((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
+  static async isModerator(req, res, next) {
+    try {
+      const user = await userModel.findById(req.userId).exec();
+      const roleFound = await findRole(user.roles, "moderator");
+      if (roleFound) {
+        next();
+      } else {
+        res.status(403).send({ message: "Requires Moderator Role!" });
       }
-
-      roleModel.find(
-        {
-          _id: { $in: user.roles },
-        },
-        (err, roles) => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
-
-          for (let i = 0; i < roles.length; i++) {
-            if (roles[i].name === "moderator") {
-              next();
-              return;
-            }
-          }
-
-          res.status(403).send({ message: "Require Moderator Role!" });
-          return;
-        }
-      );
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .send({ location: "auth", type: "Database error!", message: err });
+    }
   }
 }
 
