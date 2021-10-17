@@ -3,16 +3,14 @@ const { HOST, PORT, DB } = require("../config/db.config.js");
 const { LogController } = require("./log.controller");
 
 function addRole(name) {
-  new role({
+  new roleModel({
     name,
   }).save((err) => {
     if (err) {
       LogController.logger.error(err);
       return;
     }
-    LogController.logger.info(
-      `added ${JSON.stringify(user)} to roles collection`
-    );
+    LogController.logger.info(`added ${name} to roles collection`);
   });
 }
 
@@ -22,7 +20,7 @@ function initialize() {
       LogController.logger.error(err);
       process.exit();
     }
-    if (count == 0) {
+    if (count < 3) {
       addRole("user");
       addRole("moderator");
       addRole("admin");

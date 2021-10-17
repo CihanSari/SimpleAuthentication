@@ -1,5 +1,6 @@
 const { secret } = require("../config/auth.config");
 const { userModel, roleModel } = require("../models");
+const { LogController } = require("./log.controller");
 
 const { sign } = require("jsonwebtoken");
 const { hashSync, compareSync } = require("bcryptjs");
@@ -7,10 +8,22 @@ const { hashSync, compareSync } = require("bcryptjs");
 class AuthController {
   static async register(req, res) {
     try {
+      const { username, email } = req.body;
+      if (username == null || email == null || req.body.password == null) {
+        res
+          .status(406)
+          .send({ message: "Missing username, email or password" });
+        return;
+      }
+      const password = hashSync(`${username}${req.body.password}`, 10);
+      console.log(username, req.body.password, password);
+      LogController.logger.info(
+        `Registering user: ${username} with email: ${email}...`
+      );
       const user = new userModel({
-        username: req.body.username,
-        email: req.body.email,
-        password: hashSync(req.body.password, 8),
+        username,
+        email,
+        password,
       });
       await user.save();
       if (req.body.roles) {
@@ -48,17 +61,18 @@ class AuthController {
         });
       }
     } catch (err) {
-      res
-        .status(500)
-        .send({ location: "auth controller", type: "Database error!", message: err });
+      res.status(500).send({
+        location: "auth controller",
+        type: "Database error!",
+        message: err,
+      });
     }
   }
 
   static login(req, res) {
+    const { username } = req.body;
     userModel
-      .findOne({
-        username: req.body.username,
-      })
+      .findOne({ username })
       .populate("roles", "-__v")
       .exec((err, user) => {
         if (err) {
@@ -69,8 +83,8 @@ class AuthController {
         if (!user) {
           return res.status(404).send({ message: "User Not found." });
         }
-
-        const passwordIsValid = compareSync(req.body.password, user.password);
+        const password = `${username}${req.body.password}`;
+        const passwordIsValid = compareSync(password, user.password);
 
         if (!passwordIsValid) {
           return res.status(401).send({
@@ -79,7 +93,7 @@ class AuthController {
           });
         }
 
-        const token = sign({ id: user.id }, config.secret, {
+        const token = sign({ id: user.id }, secret, {
           expiresIn: 86400, // 24 hours
         });
 

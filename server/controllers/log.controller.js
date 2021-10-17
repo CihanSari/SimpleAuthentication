@@ -3,7 +3,7 @@ require("winston-daily-rotate-file");
 class LogController {
   static logger = (() => {
     const transportLogDaily = new winston.transports.DailyRotateFile({
-      filename: "log/application-%DATE%.log",
+      filename: "volumes/server/log/application-%DATE%.log",
       datePattern: "YYYY-MM-DD-HH",
       zippedArchive: false,
       maxSize: "20m",
