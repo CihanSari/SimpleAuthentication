@@ -1,9 +1,9 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const { DatabaseController } = require("./server/controllers/db.controller");
-const { getRoutes } = require("./server/routes");
-const { LogController } = require("./server/controllers/log.controller");
+const { DatabaseController } = require("./controllers/db.controller");
+const { getRoutes } = require("./routes");
+const { LogController } = require("./controllers/log.controller");
 
 const app = express();
 

@@ -1,11 +1,41 @@
 version: '3.7'
 services:
-  mongodb_container:
+  mongodb:
     image: mongo:latest
-    ports:
-      - 27017:27017
     volumes:
       - mongodb:/data/db
-
+    restart: always
+  mongodb-backup:
+    image: tiredofit/db-backup
+    links:
+     - mongodb
+    volumes:
+      - ./volumes/dbbackup:/backup
+    environment:
+      - DB_HOST=mongodb
+      - DB_DUMP_FREQ=1440
+      - DB_CLEANUP_TIME=8640
+      - DB_TYPE=mongo
+      - MD5=TRUE
+      - COMPRESSION=GZ
+    restart: always
+  server:
+    image: node:latest
+    command: npm start
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+      - ./volumes/logs:/tmp/app/logs
+    working_dir: /usr/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    environment:
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_NAME: AuthExample
+      LOG_PATH: /tmp/app/logs
+    restart: always
 volumes:
   mongodb:
