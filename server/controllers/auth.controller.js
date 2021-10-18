@@ -8,32 +8,30 @@ const { hashSync, compareSync } = require("bcryptjs");
 class AuthController {
   static async register(req, res) {
     try {
-      const { username, email } = req.body;
-      if (username == null || email == null || req.body.password == null) {
-        res
-          .status(406)
-          .send({ message: "Missing username, email or password" });
+      const { email, password, roles } = req.body;
+      if (email == null || password == null) {
+        res.status(406).send({ message: "Missing email or password" });
         return;
       }
-      const password = hashSync(`${username}${req.body.password}`, 10);
-      console.log(username, req.body.password, password);
-      LogController.logger.info(
-        `Registering user: ${username} with email: ${email}...`
-      );
+      const passwordHash = hashSync(`${email}${password}`, 10);
+      LogController.logger.info(`Registering user: ${email}...`);
       const user = new userModel({
-        username,
         email,
-        password,
+        passwordHash,
       });
       await user.save();
-      if (req.body.roles) {
+      if (roles) {
         roleModel.find(
           {
-            name: { $in: req.body.roles },
+            name: { $in: roles },
           },
           async (err, roles) => {
             if (err) {
-              res.status(500).send({ message: err });
+              res.status(500).send({
+                location: "Authentication",
+                type: "Database error!",
+                message: err,
+              });
               return;
             }
 
@@ -45,14 +43,22 @@ class AuthController {
       } else {
         roleModel.findOne({ name: "user" }, (err, role) => {
           if (err) {
-            res.status(500).send({ message: err });
+            res.status(500).send({
+              location: "Authentication",
+              type: "Database error!",
+              message: err,
+            });
             return;
           }
 
           user.roles = [role._id];
           user.save((err) => {
             if (err) {
-              res.status(500).send({ message: err });
+              res.status(500).send({
+                location: "Authentication",
+                type: "Database error!",
+                message: err,
+              });
               return;
             }
 
@@ -62,7 +68,7 @@ class AuthController {
       }
     } catch (err) {
       res.status(500).send({
-        location: "auth controller",
+        location: "Authentication",
         type: "Database error!",
         message: err,
       });
@@ -70,21 +76,27 @@ class AuthController {
   }
 
   static login(req, res) {
-    const { username } = req.body;
+    const { email, password } = req.body;
     userModel
-      .findOne({ username })
+      .findOne({ email })
       .populate("roles", "-__v")
       .exec((err, user) => {
         if (err) {
-          res.status(500).send({ message: err });
+          res.status(500).send({
+            location: "Authentication",
+            type: "Database error!",
+            message: err,
+          });
           return;
         }
 
         if (!user) {
-          return res.status(404).send({ message: "User Not found." });
+          return res.status(404).send({ message: "User not found!" });
         }
-        const password = `${username}${req.body.password}`;
-        const passwordIsValid = compareSync(password, user.password);
+        const passwordIsValid = compareSync(
+          `${email}${password}`,
+          user.passwordHash
+        );
 
         if (!passwordIsValid) {
           return res.status(401).send({
@@ -94,7 +106,7 @@ class AuthController {
         }
 
         const token = sign({ id: user.id }, secret, {
-          expiresIn: 86400, // 24 hours
+          expiresIn: 5 * 60 * 1000, // 5 minutes
         });
 
         let authorities = [];
@@ -104,7 +116,6 @@ class AuthController {
         }
         res.status(200).send({
           id: user._id,
-          username: user.username,
           email: user.email,
           roles: authorities,
           accessToken: token,

@@ -1,15 +1,15 @@
 class UserController {
-  static allAboard (_, res) {
-    res.status(200).send("All");
+  static guestUser(_, res) {
+    res.status(200).send("Guest");
   }
-  static userAccess (_, res) {
+  static userAccess(_, res) {
     res.status(200).send("User");
   }
-  static adminAccess (_, res) {
-    res.status(200).send("Admin");
-  }
-  static modAccess (_, res) {
+  static modAccess(_, res) {
     res.status(200).send("Moderator");
+  }
+  static adminAccess(_, res) {
+    res.status(200).send("Administrator");
   }
 }
 module.exports = { UserAccess: UserController };

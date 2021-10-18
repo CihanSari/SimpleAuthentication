@@ -2,20 +2,8 @@ const { ROLES, userModel } = require("../models");
 const { LogController } = require("../controllers/log.controller");
 
 class VerifyMW {
-  static async checkDuplicateUsernameOrEmail(req, res, next) {
+  static async checkDuplicateEmail(req, res, next) {
     try {
-      // Username
-      const user = await userModel
-        .findOne({
-          username: req.body.username,
-        })
-        .exec();
-      // Username already in use
-      if (user) {
-        res.status(400).send({ message: "Failed! Username unavailable!" });
-        return;
-      }
-
       // Email
       const email = await userModel
         .findOne({
@@ -28,7 +16,6 @@ class VerifyMW {
         return;
       }
 
-      // Both Username and Email available
       next();
     } catch (err) {
       LogController.logger.error(err);

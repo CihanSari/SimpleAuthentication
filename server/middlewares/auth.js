@@ -31,7 +31,7 @@ class AuthMW {
   static verifyToken(req, res, next) {
     const token = req.headers["x-access-token"];
     if (!token) {
-      return res.status(403).send({ message: "No token provided!" });
+      return res.status(406).send({ message: "No token provided!" });
     }
 
     verify(token, secret, (err, decoded) => {
