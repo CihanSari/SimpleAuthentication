@@ -32,9 +32,9 @@ services:
     networks:
       - db
 
-  lb:
-    container_name: lb
-    hostname: lb
+  crdb-lb:
+    container_name: crdb-lb
+    hostname: crdb-lb
     image: timveil/dynamic-haproxy:latest
     ports:
       - "1080:8080"
@@ -60,31 +60,95 @@ services:
       - DATABASE_NAME=auth
       - DATABASE_USER=authUser
     depends_on:
-      - lb
+      - crdb-lb
     networks:
       - db
 
-  server:
+  server-0:
+    container_name: server-0
     image: node:latest
     command: npm start
     volumes:
-      - .:/usr/app/
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
       - /usr/app/node_modules
       - ./volumes/logs:/tmp/app/logs
     working_dir: /usr/app
     environment:
-      - DB_HOST=lb
+      - DB_HOST=crdb-lb
       - DB_PORT=26257
       - DB_NAME=auth
       - DB_USERNAME=authUser
-    ports:
-      - "8080:8080"
+      - PORT=4000
     depends_on:
-      - lb
+      - crdb-init
     restart: always
     networks:
       - backend
 
+  server-1:
+    container_name: server-1
+    image: node:latest
+    command: npm start
+    volumes:
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
+      - /usr/app/node_modules
+      - ./volumes/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - backend
+
+  server-2:
+    container_name: server-2
+    image: node:latest
+    command: npm start
+    volumes:
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
+      - /usr/app/node_modules
+      - ./volumes/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - backend
+
+  server-lb:
+    container_name: server-lb
+    hostname: server-lb
+    image: haproxy
+    volumes:
+      - ./server-lb.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    ports:
+      - "8080:80"
+      - "8081:8081"
+    depends_on:
+      - server-0
+      - server-1
+      - server-2
+    restart: always
+    networks:
+      - backend
 networks:
   db:
   backend:

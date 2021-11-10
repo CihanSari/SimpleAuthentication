@@ -4,6 +4,7 @@ const { LogController } = require("./log.controller");
 
 const { sign } = require("jsonwebtoken");
 const { hashSync, compareSync } = require("bcryptjs");
+const { DatabaseController } = require("./db.controller");
 
 class AuthController {
   static async register(req, res) {
