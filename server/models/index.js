@@ -1,9 +1,6 @@
-const mongoose = require("mongoose");
-const { userModel } = require("./user.model");
-const { roleModel } = require("./role.model");
+const { UserModel } = require("./user.model");
+
 module.exports = {
-  mongoose,
-  userModel,
-  roleModel,
+  UserModel,
   ROLES: ["user", "admin", "moderator"],
 };

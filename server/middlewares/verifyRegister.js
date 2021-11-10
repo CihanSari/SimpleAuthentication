@@ -1,22 +1,23 @@
-const { ROLES, userModel } = require("../models");
+const { ROLES, UserModel } = require("../models");
 const { LogController } = require("../controllers/log.controller");
 
 class VerifyMW {
-  static async checkDuplicateEmail(req, res, next) {
+  static checkDuplicateEmail(req, res, next) {
     try {
       // Email
-      const email = await userModel
+      UserModel.users
         .findOne({
-          email: req.body.email,
+          where: { email: req.body.email },
         })
-        .exec();
-      // Email already in use
-      if (email) {
-        res.status(400).send({ message: "Failed! Email is already in use!" });
-        return;
-      }
-
-      next();
+        .then((anotherUser) => {
+          if (anotherUser == null) {
+            next();
+          } else {
+            res
+              .status(400)
+              .send({ message: "Failed! Email is already in use!" });
+          }
+        });
     } catch (err) {
       LogController.logger.error(err);
       res.status(500).send({
@@ -27,20 +28,28 @@ class VerifyMW {
     }
   }
 
-  static checkRolesExisted(req, res, next) {
-    if (req.body.roles) {
-      for (let i = 0; i < req.body.roles.length; i++) {
-        const role = req.body.roles[i];
-        if (!ROLES.includes(role)) {
-          res.status(400).send({
-            message: `Failed! Role ${role} does not exist!`,
-          });
-          return;
+  static checkRolesExists(req, res, next) {
+    try {
+      if (req.body.roles) {
+        for (let i = 0; i < req.body.roles.length; i++) {
+          const role = req.body.roles[i];
+          if (!ROLES.includes(role)) {
+            res.status(400).send({
+              message: `Failed! Role ${role} does not exist!`,
+            });
+            return;
+          }
         }
       }
+      next();
+    } catch (err) {
+      LogController.logger.error(err);
+      res.status(500).send({
+        location: "Verify Register",
+        type: "Database error!",
+        message: err,
+      });
     }
-
-    next();
   }
 }
 

@@ -1,17 +1,28 @@
-const mongoose = require("mongoose");
-
-const userModel = mongoose.model(
-  "User",
-  new mongoose.Schema({
-    email: String,
-    passwordHash: String,
-    roles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Role",
+const Sequelize = require("sequelize-cockroachdb");
+const { DatabaseController } = require("../controllers/db.controller");
+class UserModel {
+  static users = DatabaseController.sequelize.define("users", {
+    id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    email: {
+      type: Sequelize.TEXT,
+    },
+    password: {
+      type: Sequelize.STRING,
+    },
+    roles: {
+      type: Sequelize.STRING,
+      get() {
+        return this.getDataValue("roles").split(";");
       },
-    ],
-  })
-);
+      set(val) {
+        this.setDataValue("roles", val.join(";").toUpperCase());
+      },
+    },
+  });
+}
 
-module.exports = { userModel };
+module.exports = { UserModel };

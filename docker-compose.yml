@@ -1,41 +1,56 @@
-version: '3.7'
+version: "3.8"
+
 services:
-  mongodb:
-    image: mongo:latest
-    volumes:
-      - mongodb:/data/db
+  crdb-0:
+    container_name: crdb-0
+    hostname: crdb-0
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure
     restart: always
-  mongodb-backup:
-    image: tiredofit/db-backup
-    links:
-     - mongodb
-    volumes:
-      - ./volumes/dbbackup:/backup
-    environment:
-      - DB_HOST=mongodb
-      - DB_DUMP_FREQ=1440
-      - DB_CLEANUP_TIME=8640
-      - DB_TYPE=mongo
-      - MD5=TRUE
-      - COMPRESSION=GZ
-    restart: always
-  server:
-    image: node:latest
-    command: npm start
-    volumes:
-      - .:/usr/app/
-      - /usr/app/node_modules
-      - ./volumes/logs:/tmp/app/logs
-    working_dir: /usr/app
-    ports:
-      - "8080:8080"
+
+  crdb-1:
+    container_name: crdb-1
+    hostname: crdb-1
+    image: cockroachdb/cockroach:latest
+    command: start --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure --join=crdb-0
     depends_on:
-      - mongodb
-    environment:
-      DB_HOST: mongodb
-      DB_PORT: 27017
-      DB_NAME: AuthExample
-      LOG_PATH: /tmp/app/logs
+      - crdb-0
     restart: always
-volumes:
-  mongodb:
+
+  crdb-2:
+    container_name: crdb-2
+    hostname: crdb-2
+    image: cockroachdb/cockroach:latest
+    command: start --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure --join=crdb-0
+    depends_on:
+      - crdb-0
+    restart: always
+
+  lb:
+    container_name: lb
+    hostname: lb
+    image: timveil/dynamic-haproxy:latest
+    ports:
+      - "26257:26257"
+      - "1080:8080"
+      - "1081:8081"
+    environment:
+      - NODES=crdb-0 crdb-1 crdb-2
+    depends_on:
+      - crdb-0
+      - crdb-1
+      - crdb-2
+    restart: always
+
+  crdb-init:
+    container_name: crdb-init
+    hostname: crdb-init
+    image: timveil/cockroachdb-remote-client:latest
+    environment:
+      - COCKROACH_HOST=crdb-0:26257
+      - COCKROACH_INSECURE=true
+      - DATABASE_NAME=auth
+      - DATABASE_USER=authUser
+    depends_on:
+      - lb
+    restart: always

@@ -163,7 +163,7 @@ function getAuthRoutes() {
 
   router.post(
     "/auth/register",
-    [VerifyMW.checkDuplicateEmail, VerifyMW.checkRolesExisted],
+    [VerifyMW.checkDuplicateEmail, VerifyMW.checkRolesExists],
     AuthController.register
   );
 

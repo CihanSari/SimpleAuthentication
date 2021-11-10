@@ -180,17 +180,17 @@ function getUserRoutes() {
 
   testRouter.get("/guest", UserAccess.guestUser);
 
-  testRouter.get("/user", [AuthMW.verifyToken], UserAccess.userAccess);
+  testRouter.get("/user", [AuthMW.verifyAuthToken], UserAccess.userAccess);
 
   testRouter.get(
     "/moderator",
-    [AuthMW.verifyToken, AuthMW.isModerator],
+    [AuthMW.verifyAuthToken, AuthMW.isModerator],
     UserAccess.modAccess
   );
 
   testRouter.get(
     "/admin",
-    [AuthMW.verifyToken, AuthMW.isAdmin],
+    [AuthMW.verifyAuthToken, AuthMW.isAdmin],
     UserAccess.adminAccess
   );
 

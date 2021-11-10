@@ -1,40 +1,20 @@
-const { userModel, roleModel } = require("../models");
+const { UserModel } = require("../models");
 const { verify } = require("jsonwebtoken");
-const { secret } = require("../config/auth.config.js");
+const { authSecret, resetSecret } = require("../config/auth.config.js");
 
 async function findRole(userRoles, queryRole) {
-  return new Promise((res, rej) => {
-    roleModel.find(
-      {
-        _id: { $in: userRoles },
-      },
-      (err, roles) => {
-        if (err) {
-          rej(err);
-          return;
-        }
-
-        for (let i = 0; i < roles.length; i++) {
-          if (roles[i].name === queryRole) {
-            res(true);
-            return;
-          }
-        }
-        res(false);
-        return;
-      }
-    );
-  });
+  const found = await userRoles.find((e) => e == queryRole.toUpperCase());
+  return found != null;
 }
 
 class AuthMW {
-  static verifyToken(req, res, next) {
+  static verifyAuthToken(req, res, next) {
     const token = req.headers["x-access-token"];
     if (!token) {
       return res.status(406).send({ message: "No token provided!" });
     }
 
-    verify(token, secret, (err, decoded) => {
+    verify(token, authSecret, (err, decoded) => {
       if (err) {
         return res.status(401).send({ message: "Unauthorized!" });
       }
@@ -42,14 +22,32 @@ class AuthMW {
       next();
     });
   }
-  static async isAdmin(req, res, next) {
+
+  static verifyResetToken(req, res, next) {
+    const token = req.headers["x-access-token"];
+    if (!token) {
+      return res.status(406).send({ message: "No token provided!" });
+    }
+
+    verify(token, resetSecret, (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ message: "Unauthorized!" });
+      }
+      req.userId = decoded.id;
+      next();
+    });
+  }
+
+  static async hasRole(id, role, res, next) {
     try {
-      const user = await userModel.findById(req.userId).exec();
-      const roleFound = await findRole(user.roles, "admin");
+      const user = await UserModel.users.findOne({
+        where: { id },
+      });
+      const roleFound = await findRole(user.roles, role);
       if (roleFound) {
         next();
       } else {
-        res.status(403).send({ message: "Requires Admin Role!" });
+        res.status(403).send({ message: `Requires ${role} Role!` });
       }
     } catch (err) {
       res
@@ -57,20 +55,13 @@ class AuthMW {
         .send({ location: "auth", type: "Database error!", message: err });
     }
   }
+
+  static async isAdmin(req, res, next) {
+    AuthMW.hasRole(req.userId, "ADMIN", res, next);
+  }
+
   static async isModerator(req, res, next) {
-    try {
-      const user = await userModel.findById(req.userId).exec();
-      const roleFound = await findRole(user.roles, "moderator");
-      if (roleFound) {
-        next();
-      } else {
-        res.status(403).send({ message: "Requires Moderator Role!" });
-      }
-    } catch (err) {
-      res
-        .status(500)
-        .send({ location: "auth", type: "Database error!", message: err });
-    }
+    AuthMW.hasRole(req.userId, "MODERATOR", res, next);
   }
 }
 
