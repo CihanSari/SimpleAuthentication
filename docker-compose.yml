@@ -7,6 +7,8 @@ services:
     image: cockroachdb/cockroach:latest
     command: start-single-node --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure
     restart: always
+    networks:
+      - db
 
   crdb-1:
     container_name: crdb-1
@@ -16,6 +18,8 @@ services:
     depends_on:
       - crdb-0
     restart: always
+    networks:
+      - db
 
   crdb-2:
     container_name: crdb-2
@@ -25,13 +29,14 @@ services:
     depends_on:
       - crdb-0
     restart: always
+    networks:
+      - db
 
   lb:
     container_name: lb
     hostname: lb
     image: timveil/dynamic-haproxy:latest
     ports:
-      - "26257:26257"
       - "1080:8080"
       - "1081:8081"
     environment:
@@ -41,6 +46,9 @@ services:
       - crdb-1
       - crdb-2
     restart: always
+    networks:
+      - db
+      - backend
 
   crdb-init:
     container_name: crdb-init
@@ -53,4 +61,30 @@ services:
       - DATABASE_USER=authUser
     depends_on:
       - lb
+    networks:
+      - db
+
+  server:
+    image: node:latest
+    command: npm start
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+      - ./volumes/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+    ports:
+      - "8080:8080"
+    depends_on:
+      - lb
     restart: always
+    networks:
+      - backend
+
+networks:
+  db:
+  backend:

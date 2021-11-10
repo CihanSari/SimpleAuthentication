@@ -4,6 +4,7 @@ const cors = require("cors");
 const { getRoutes } = require("./routes");
 const { LogController } = require("./controllers/log.controller");
 const { URL, PORT } = require("./config/server.config.js");
+const { UserModel } = require("./models");
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // routes
 app.use(getRoutes());
+
+UserModel.init();
 
 // set port, listen for requests
 app.listen(PORT, () => {

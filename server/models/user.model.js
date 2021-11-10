@@ -1,6 +1,9 @@
 const Sequelize = require("sequelize-cockroachdb");
 const { DatabaseController } = require("../controllers/db.controller");
 class UserModel {
+  static init() {
+    UserModel.users.sync();
+  }
   static users = DatabaseController.sequelize.define("users", {
     id: {
       type: Sequelize.INTEGER,
