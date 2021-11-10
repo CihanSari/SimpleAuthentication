@@ -3,4 +3,5 @@ module.exports = {
   PORT: process.env.DB_PORT || 26257,
   DB: process.env.DB_NAME || "auth",
   USER: process.env.DB_USERNAME || "authUser",
+  MIGRATE: process.env.DB_MIGRATE || "ON",
 };

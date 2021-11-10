@@ -1,13 +1,11 @@
 const winston = require("winston");
 require("winston-daily-rotate-file");
 const { join } = require("path");
+const { LOG_PATH } = require("../config/server.config");
 class LogController {
   static logger = (() => {
     const transportLogDaily = new winston.transports.DailyRotateFile({
-      filename: join(
-        process.env.LOG_PATH || "volumes/server/log/",
-        "application-%DATE%.log"
-      ),
+      filename: join(LOG_PATH, "application-%DATE%.log"),
       datePattern: "YYYY-MM-DD-HH",
       zippedArchive: false,
       maxSize: "20m",

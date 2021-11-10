@@ -7,6 +7,8 @@ services:
     image: cockroachdb/cockroach:latest
     command: start-single-node --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure
     restart: always
+    volumes:
+      - ./volumes/crdb-0:/cockroach/cockroach-data
     networks:
       - db
 
@@ -18,6 +20,8 @@ services:
     depends_on:
       - crdb-0
     restart: always
+    volumes:
+      - ./volumes/crdb-1:/cockroach/cockroach-data
     networks:
       - db
 
@@ -29,6 +33,8 @@ services:
     depends_on:
       - crdb-0
     restart: always
+    volumes:
+      - ./volumes/crdb-2:/cockroach/cockroach-data
     networks:
       - db
 
@@ -73,13 +79,14 @@ services:
       - ./package-lock.json:/usr/app/package-lock.json
       - ./server:/usr/app/server
       - /usr/app/node_modules
-      - ./volumes/logs:/tmp/app/logs
+      - ./volumes/server-0/logs:/tmp/app/logs
     working_dir: /usr/app
     environment:
       - DB_HOST=crdb-lb
       - DB_PORT=26257
       - DB_NAME=auth
       - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
       - PORT=4000
     depends_on:
       - crdb-init
@@ -96,13 +103,14 @@ services:
       - ./package-lock.json:/usr/app/package-lock.json
       - ./server:/usr/app/server
       - /usr/app/node_modules
-      - ./volumes/logs:/tmp/app/logs
+      - ./volumes/server-1/logs:/tmp/app/logs
     working_dir: /usr/app
     environment:
       - DB_HOST=crdb-lb
       - DB_PORT=26257
       - DB_NAME=auth
       - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
       - PORT=4000
     depends_on:
       - crdb-init
@@ -119,13 +127,14 @@ services:
       - ./package-lock.json:/usr/app/package-lock.json
       - ./server:/usr/app/server
       - /usr/app/node_modules
-      - ./volumes/logs:/tmp/app/logs
+      - ./volumes/server-2/logs:/tmp/app/logs
     working_dir: /usr/app
     environment:
       - DB_HOST=crdb-lb
       - DB_PORT=26257
       - DB_NAME=auth
       - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
       - PORT=4000
     depends_on:
       - crdb-init
