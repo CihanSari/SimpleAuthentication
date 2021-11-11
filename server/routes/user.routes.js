@@ -46,8 +46,6 @@
  *   get:
  *     summary: Access normal user content.
  *     description: Access content using issued token.
- *     parameters:
- *       - $ref: '#components/parameters/AccessToken'
  *     responses:
  *       200:
  *         description: User content
@@ -85,8 +83,6 @@
  *   get:
  *     summary: Access moderator user content.
  *     description: Access content using issued token.
- *     parameters:
- *       - $ref: '#components/parameters/AccessToken'
  *     responses:
  *       200:
  *         description: Moderator content
@@ -124,8 +120,6 @@
  *   get:
  *     summary: Access administrator user content.
  *     description: Access content using issued token.
- *     parameters:
- *       - $ref: '#components/parameters/AccessToken'
  *     responses:
  *       200:
  *         description: Administrator content
@@ -162,12 +156,12 @@
  */
 
 const express = require("express");
-const { AuthMW } = require("../middlewares");
+const { KeycloakController } = require("../controllers/keycloak.controller");
 const { UserAccess } = require("../controllers/user.controller");
 
 function getUserRoutes() {
   const router = express.Router();
-
+  const keycloak = KeycloakController.get();
   router.use((_, res, next) => {
     res.header(
       "Access-Control-Allow-Headers",
@@ -180,19 +174,15 @@ function getUserRoutes() {
 
   testRouter.get("/guest", UserAccess.guestUser);
 
-  testRouter.get("/user", [AuthMW.verifyAuthToken], UserAccess.userAccess);
+  testRouter.get("/user", keycloak.protect("user"), UserAccess.userAccess);
 
   testRouter.get(
     "/moderator",
-    [AuthMW.verifyAuthToken, AuthMW.isModerator],
+    keycloak.protect("moderator"),
     UserAccess.modAccess
   );
 
-  testRouter.get(
-    "/admin",
-    [AuthMW.verifyAuthToken, AuthMW.isAdmin],
-    UserAccess.adminAccess
-  );
+  testRouter.get("/admin", keycloak.protect("admin"), UserAccess.adminAccess);
 
   router.use("/test", testRouter);
   return router;

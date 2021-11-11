@@ -1,163 +1,82 @@
-version: "3.8"
+version: "3"
+
+volumes:
+  postgres_data:
+    driver: local
 
 services:
-  crdb-0:
-    container_name: crdb-0
-    hostname: crdb-0
-    image: cockroachdb/cockroach:latest
-    command: start-single-node --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure
-    restart: always
+  postgres:
+    image: "postgres:alpine"
     volumes:
-      - ./volumes/crdb-0:/cockroach/cockroach-data
-    networks:
-      - db
-
-  crdb-1:
-    container_name: crdb-1
-    hostname: crdb-1
-    image: cockroachdb/cockroach:latest
-    command: start --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure --join=crdb-0
-    depends_on:
-      - crdb-0
-    restart: always
-    volumes:
-      - ./volumes/crdb-1:/cockroach/cockroach-data
-    networks:
-      - db
-
-  crdb-2:
-    container_name: crdb-2
-    hostname: crdb-2
-    image: cockroachdb/cockroach:latest
-    command: start --cluster-name=auth-haproxy --logtostderr=WARNING --log-file-verbosity=WARNING --insecure --join=crdb-0
-    depends_on:
-      - crdb-0
-    restart: always
-    volumes:
-      - ./volumes/crdb-2:/cockroach/cockroach-data
-    networks:
-      - db
-
-  crdb-lb:
-    container_name: crdb-lb
-    hostname: crdb-lb
-    image: timveil/dynamic-haproxy:latest
+      - ./volumes/postgres:/var/lib/postgresql/data
+    restart: "always"
     ports:
-      - "1080:8080"
-      - "1081:8081"
+      - 5432:5432
     environment:
-      - NODES=crdb-0 crdb-1 crdb-2
-    depends_on:
-      - crdb-0
-      - crdb-1
-      - crdb-2
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloak
+      POSTGRES_HOST: postgres
+
+  pgbackups:
+    image: prodrigestivill/postgres-backup-local
+    container_name: pgbackups
     restart: always
-    networks:
-      - db
-      - backend
-
-  crdb-init:
-    container_name: crdb-init
-    hostname: crdb-init
-    image: timveil/cockroachdb-remote-client:latest
-    environment:
-      - COCKROACH_HOST=crdb-0:26257
-      - COCKROACH_INSECURE=true
-      - DATABASE_NAME=auth
-      - DATABASE_USER=authUser
-    depends_on:
-      - crdb-lb
-    networks:
-      - db
-
-  server-0:
-    container_name: server-0
-    image: node:latest
-    command: npm start
     volumes:
-      - ./package.json:/usr/app/package.json
-      - ./package-lock.json:/usr/app/package-lock.json
-      - ./server:/usr/app/server
-      - /usr/app/node_modules
-      - ./volumes/server-0/logs:/tmp/app/logs
-    working_dir: /usr/app
-    environment:
-      - DB_HOST=crdb-lb
-      - DB_PORT=26257
-      - DB_NAME=auth
-      - DB_USERNAME=authUser
-      - LOG_PATH=/tmp/app/logs
-      - PORT=4000
+      - ./volumes/pgbackups:/backups
+    links:
+      - postgres
     depends_on:
-      - crdb-init
-    restart: always
-    networks:
-      - backend
-
-  server-1:
-    container_name: server-1
-    image: node:latest
-    command: npm start
-    volumes:
-      - ./package.json:/usr/app/package.json
-      - ./package-lock.json:/usr/app/package-lock.json
-      - ./server:/usr/app/server
-      - /usr/app/node_modules
-      - ./volumes/server-1/logs:/tmp/app/logs
-    working_dir: /usr/app
+      - postgres
     environment:
-      - DB_HOST=crdb-lb
-      - DB_PORT=26257
-      - DB_NAME=auth
-      - DB_USERNAME=authUser
-      - LOG_PATH=/tmp/app/logs
-      - PORT=4000
-    depends_on:
-      - crdb-init
-    restart: always
-    networks:
-      - backend
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+      #  - POSTGRES_PASSWORD_FILE=/run/secrets/db_password <-- alternative for POSTGRES_PASSWORD (to use with docker secrets)
+      - POSTGRES_EXTRA_OPTS=-Z6 --schema=public --blobs
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=8080
 
-  server-2:
-    container_name: server-2
-    image: node:latest
-    command: npm start
+  traefik:
+    image: library/traefik:alpine
+    container_name: traefik
     volumes:
-      - ./package.json:/usr/app/package.json
-      - ./package-lock.json:/usr/app/package-lock.json
-      - ./server:/usr/app/server
-      - /usr/app/node_modules
-      - ./volumes/server-2/logs:/tmp/app/logs
-    working_dir: /usr/app
-    environment:
-      - DB_HOST=crdb-lb
-      - DB_PORT=26257
-      - DB_NAME=auth
-      - DB_USERNAME=authUser
-      - LOG_PATH=/tmp/app/logs
-      - PORT=4000
-    depends_on:
-      - crdb-init
-    restart: always
-    networks:
-      - backend
-
-  server-lb:
-    container_name: server-lb
-    hostname: server-lb
-    image: haproxy
-    volumes:
-      - ./server-lb.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      --logLevel=ERROR
+      --api.dashboard
+      --docker
+      --entrypoints="Name:http Address::80"
+      --defaultentrypoints="http"
     ports:
-      - "8080:80"
-      - "8081:8081"
+      - 1080:80
+      - 3000:8080
+
+  keycloak:
+    image: jboss/keycloak
+    container_name: keycloak
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres
+      DB_PORT: 5432
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: Pa55w0rd
+      # KEYCLOAK_LOGLEVEL: DEBUG
+      JGROUPS_DISCOVERY_PROTOCOL: JDBC_PING
+      JGROUPS_DISCOVERY_PROPERTIES: datasource_jndi_name=java:jboss/datasources/KeycloakDS,info_writer_sleep_time=500,initialize_sql="CREATE TABLE IF NOT EXISTS JGROUPSPING ( own_addr varchar(200) NOT NULL, cluster_name varchar(200) NOT NULL, created timestamp default current_timestamp, ping_data BYTEA, constraint PK_JGROUPSPING PRIMARY KEY (own_addr, cluster_name))"
     depends_on:
-      - server-0
-      - server-1
-      - server-2
-    restart: always
-    networks:
-      - backend
-networks:
-  db:
-  backend:
+      - postgres
+    labels:
+      traefik.enable: true
+      traefik.port: 8080
+      traefik.protocol: http
+      traefik.frontend.rule: Host:localhost
+      traefik.frontend.passHostHeader: true
+      # traefik.backend.loadbalancer.stickiness: true

@@ -24,7 +24,7 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: "http://localhost:8080",
+      url: "http://localhost:4000",
       description: "Development server",
     },
   ],
@@ -44,16 +44,17 @@ const getRoutes = () => {
     res.json({ message: "Welcome to the application." });
   });
   const apiRouter = express.Router();
-  // Authentication routes
-  apiRouter.use(getAuthRoutes());
-  // User routes
-  apiRouter.use(getUserRoutes());
   // OpenAPI documentation
   apiRouter.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   apiRouter.get("/swagger.json", (_, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });
+  // Authentication routes
+  apiRouter.use(getAuthRoutes());
+
+  // User routes
+  apiRouter.use(getUserRoutes());
 
   router.use("/api", apiRouter);
   return router;
