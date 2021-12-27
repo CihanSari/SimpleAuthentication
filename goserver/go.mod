@@ -11,6 +11,7 @@ require (
 	authconfig v0.0.0-00010101000000-000000000000 // indirect
 	authcontroller v0.0.0-00010101000000-000000000000 // indirect
 	authrouter v0.0.0-00010101000000-000000000000 // indirect
+	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 )
 
