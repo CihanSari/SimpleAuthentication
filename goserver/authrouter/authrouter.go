@@ -7,7 +7,9 @@ import (
 func NewRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexPage())
-	return mux
+	mux.HandleFunc("/api/auth/register", registerHandle())
+	loggerWrappedMux := newLogger(mux)
+	return loggerWrappedMux
 }
 
 func indexPage() http.HandlerFunc {
