@@ -1,20 +1,23 @@
 package authlog
 
 import (
-	auth_config "authconfig"
+	"authconfig"
+	"io"
 	"log"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func InitLogger() {
-	serverConfig := auth_config.GetServerConfig()
-	log.SetOutput(&lumberjack.Logger{
-		Filename:   filepath.Join(serverConfig.LOG_PATH, "logs.txt"),
+	serverConfig := authconfig.GetServerConfig()
+	multi := io.MultiWriter(&lumberjack.Logger{
+		Filename:   filepath.Join(serverConfig.LogPath, "logs.txt"),
 		MaxSize:    500, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28,   //days
 		Compress:   true, // disabled by default
-	})
+	}, os.Stdout)
+	log.SetOutput(multi)
 }

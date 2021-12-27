@@ -1,51 +1,43 @@
 package authconfig
 
 import (
-	"log"
 	"os"
-	"strconv"
 )
 
 type ServerConfig struct {
-	PORT     int
-	URL      string
-	LOG_PATH string
+	Port    string
+	Host    string
+	LogPath string
 }
 
-var defaultPort int = 4000
-var defaultURL string = "localhost:4000"
+var defaultPort string = "4000"
+var defaultHost string = ""
 var defaultLogPath string = "volumes/server/log"
 
 var serverConfig ServerConfig
 
 func GetServerConfig() *ServerConfig {
 	// Check if the port value is set to determine initialization
-	if serverConfig.PORT == 0 {
+	if serverConfig.Port == "" {
 		// Lookup & set PORT
 		if val, present := os.LookupEnv("PORT"); present {
-			portStr, err := strconv.Atoi(val)
-			if err != nil {
-				serverConfig.PORT = portStr
-			} else {
-				log.Printf("Failed to parse PORT environmental variable into integer: %v. Using default value %d.\n", err, defaultPort)
-				serverConfig.PORT = defaultPort
-			}
+			serverConfig.Port = val
 		} else {
-			serverConfig.PORT = defaultPort
+			serverConfig.Port = defaultPort
 		}
 
-		// Lookup & set URL
-		if val, present := os.LookupEnv("URL"); present {
-			serverConfig.URL = val
+		// Lookup & set HOST
+		if val, present := os.LookupEnv("HOST"); present {
+			serverConfig.Host = val
 		} else {
-			serverConfig.URL = defaultURL
+			serverConfig.Host = defaultHost
 		}
 
-		// Lookup & set URL
+		// Lookup & set LOG_PATH
 		if val, present := os.LookupEnv("LOG_PATH"); present {
-			serverConfig.LOG_PATH = val
+			serverConfig.LogPath = val
 		} else {
-			serverConfig.LOG_PATH = defaultLogPath
+			serverConfig.LogPath = defaultLogPath
 		}
 	}
 	return &serverConfig
