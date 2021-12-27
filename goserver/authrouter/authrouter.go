@@ -9,6 +9,10 @@ func NewRouter() http.Handler {
 	mux.HandleFunc("/", indexPage())
 	mux.HandleFunc("/api/auth/register", registerHandle())
 	mux.HandleFunc("/api/auth/login", loginHandle())
+	mux.HandleFunc("/api/guest", guestAccessHandle())
+	mux.HandleFunc("/api/user", userAccessHandle())
+	mux.HandleFunc("/api/moderator", modAccessHandle())
+	mux.HandleFunc("/api/admin", adminAccessHandle())
 	loggerWrappedMux := newLogger(mux)
 	return loggerWrappedMux
 }
@@ -24,10 +28,3 @@ func indexPage() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
-
-var notFound = func() http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Not found"))
-		w.WriteHeader(http.StatusNotFound)
-	})
-}()

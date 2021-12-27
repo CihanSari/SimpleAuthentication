@@ -10,7 +10,7 @@ type LoginUser struct {
 type LoggedInUser struct {
 	Id          string
 	Email       string
-	Roles       []string
+	Roles       UserRoles
 	AccessToken string
 }
 
@@ -22,7 +22,7 @@ func (u LoginUser) Login() (LoggedInUser, error) {
 	loggedInUser := LoggedInUser{
 		Id:          "0",
 		Email:       u.Email,
-		Roles:       []string{"Admin"},
+		Roles:       UserRoles{UserLevel, ModeratorLevel, AdministratorLevel},
 		AccessToken: "token",
 	}
 	return loggedInUser, nil

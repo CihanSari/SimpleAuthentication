@@ -8,14 +8,6 @@ import (
 	"net/http"
 )
 
-func internalErrorHandler(w http.ResponseWriter) {
-	if r := recover(); r != nil {
-		log.Println("Internal error", r)
-		w.Write([]byte("Failed! Internal error!"))
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-}
-
 func registerHandle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
