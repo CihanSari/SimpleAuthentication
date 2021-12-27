@@ -8,6 +8,7 @@ func NewRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexPage())
 	mux.HandleFunc("/api/auth/register", registerHandle())
+	mux.HandleFunc("/api/auth/login", loginHandle())
 	loggerWrappedMux := newLogger(mux)
 	return loggerWrappedMux
 }

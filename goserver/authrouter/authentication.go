@@ -8,33 +8,59 @@ import (
 	"net/http"
 )
 
+func internalErrorHandler(w http.ResponseWriter) {
+	if r := recover(); r != nil {
+		log.Println("Internal error", r)
+		w.Write([]byte("Failed! Internal error!"))
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 func registerHandle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			notFound(w, r)
 			return
 		}
-		var b authcontroller.RegisterUser
-		if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+		var u authcontroller.RegisterUser
+		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println("Internal error in register", r)
-				w.Write([]byte("Failed! Internal error!"))
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		}()
-		log.Printf("Registering user: %v...\n", b.Email)
-		// Handle if e-mail is already in use
-		if _, err := b.Register(); err != nil {
+		defer internalErrorHandler(w)
+		log.Printf("Registering user: %v...\n", u.Email)
+		if _, err := u.Register(); err != nil {
 			res := fmt.Sprintf("Failed: %v", err.Error())
 			w.Write([]byte(res))
 			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.Write([]byte("User was registered successfully!"))
+			w.WriteHeader(http.StatusOK)
+		}
+	}
+}
+
+func loginHandle() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			notFound(w, r)
 			return
 		}
-		w.Write([]byte("User was registered successfully!"))
-		w.WriteHeader(http.StatusOK)
+		var u authcontroller.LoginUser
+		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer internalErrorHandler(w)
+		log.Printf("Logging in user: %v...\n", u.Email)
+		if res, err := u.Login(); err != nil {
+			errMsg := fmt.Sprintf("Failed: %v", err.Error())
+			w.Write([]byte(errMsg))
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(res)
+		}
 	}
 }

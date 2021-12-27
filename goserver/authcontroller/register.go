@@ -5,7 +5,6 @@ import (
 )
 
 type RegisterUser struct {
-	Username string
 	Password string
 	Email    string
 	Roles    []string
