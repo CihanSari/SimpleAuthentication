@@ -1,6 +1,6 @@
 const { UserModel } = require("../models");
 const { verify } = require("jsonwebtoken");
-const { authSecret, resetSecret } = require("../config/auth.config.js");
+const { authSecret } = require("../config/auth.config.js");
 
 async function findRole(userRoles, queryRole) {
   const found = await userRoles.find((e) => e == queryRole.toUpperCase());
@@ -15,21 +15,6 @@ class AuthMW {
     }
 
     verify(token, authSecret, (err, decoded) => {
-      if (err) {
-        return res.status(401).send({ message: "Unauthorized!" });
-      }
-      req.userId = decoded.id;
-      next();
-    });
-  }
-
-  static verifyResetToken(req, res, next) {
-    const token = req.headers["x-access-token"];
-    if (!token) {
-      return res.status(406).send({ message: "No token provided!" });
-    }
-
-    verify(token, resetSecret, (err, decoded) => {
       if (err) {
         return res.status(401).send({ message: "Unauthorized!" });
       }
