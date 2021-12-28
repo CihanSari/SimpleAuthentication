@@ -2,7 +2,7 @@
   "name": "auth-example",
   "version": "1.0.0",
   "description": "Simple authentication example",
-  "main": "index.js",
+  "main": "server/server.js",
   "scripts": {
     "start": "npm ci && node server/server.js",
     "dev": "nodemon server/server.js",
