@@ -6,7 +6,7 @@ This repository contains authentication example with jwt tokens.
 
 - User can register and login with email and password.
 - Tokens are valid for 5 minutes (can be modified upon specification)
-- Client-side logout can be performed by removing the token. If really required, another lookup table (e.g. on redis or on mongo) can be issued to blacklist tokens.
+- Client-side logout can be performed by removing the token. If really required, another lookup table (e.g. on redis or on cockroach) can be issued to blacklist tokens.
 - Server can be started by 'docker-compose up -d'
 - Endpoint documentation is provided in openapi3 specification using swagger. Accessible at: http://localhost:8080/api/docs
 - JSON file for endpoints can be accessed by http://localhost:8080/api/swagger.json. If required, https://editor.swagger.io/ can be used to convert it to YAML format.

@@ -10,9 +10,9 @@ type ServerConfig struct {
 	LogPath string
 }
 
-var defaultPort string = "4000"
-var defaultHost string = ""
-var defaultLogPath string = "volumes/server/log"
+const defaultPort string = "4000"
+const defaultHost string = ""
+const defaultLogPath string = "volumes/server/log"
 
 var serverConfig ServerConfig
 

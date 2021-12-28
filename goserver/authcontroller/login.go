@@ -2,9 +2,14 @@ package authcontroller
 
 import (
 	"authconfig"
+	"authdata"
 	"errors"
+	"log"
+	"strconv"
+	"strings"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
@@ -33,10 +38,20 @@ func (u LoginUser) Login() (LoggedInUserWithToken, error) {
 	if u.Password == "" || u.Email == "" {
 		return LoggedInUserWithToken{}, errors.New("missing email or password")
 	}
-	loggedInUser := LoggedInUser{
-		Id:    "0",
-		Email: u.Email,
-		Roles: UserRoles{UserLevel, ModeratorLevel, AdministratorLevel},
+	var loggedInUser LoggedInUser
+	if userData, err := authdata.GetUserByEmail(u.Email); err != nil {
+		return LoggedInUserWithToken{}, errors.New("user not found")
+	} else {
+		if bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(u.Password)) != nil {
+			return LoggedInUserWithToken{}, errors.New("wrong password")
+		}
+		roles := strings.Split(userData.Roles, ",")
+		log.Printf("Roles: %v\n", roles)
+		for _, role := range roles {
+			loggedInUser.Roles = append(loggedInUser.Roles, UserRole(role))
+		}
+		loggedInUser.Id = strconv.FormatInt(userData.Id, 10)
+		loggedInUser.Email = userData.Email
 	}
 	issueTime := time.Now().Unix()
 	expireTime := time.Now().Add(time.Minute * 5).Unix()
