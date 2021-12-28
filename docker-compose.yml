@@ -39,7 +39,7 @@ services:
     ports:
       - "1080:8080"
       - "1081:8081"
-      - "26257:26257" # Remove on production
+      - "26257:26257" # Remove on production. Setup for goserver
     environment:
       - NODES=crdb-0 crdb-1 crdb-2
     depends_on:
@@ -64,6 +64,95 @@ services:
       - crdb-lb
     networks:
       - db
+
+  server-0:
+    container_name: server-0
+    image: node:latest
+    command: npm start
+    volumes:
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
+      - /usr/app/node_modules
+      - ./volumes/server-0/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - backend
+
+  server-1:
+    container_name: server-1
+    image: node:latest
+    command: npm start
+    volumes:
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
+      - /usr/app/node_modules
+      - ./volumes/server-1/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - backend
+
+  server-2:
+    container_name: server-2
+    image: node:latest
+    command: npm start
+    volumes:
+      - ./package.json:/usr/app/package.json
+      - ./package-lock.json:/usr/app/package-lock.json
+      - ./server:/usr/app/server
+      - /usr/app/node_modules
+      - ./volumes/server-2/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - backend
+
+  server-lb:
+    container_name: server-lb
+    hostname: server-lb
+    image: haproxy
+    volumes:
+      - ./server-lb.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    ports:
+      - "8080:80"
+      - "8081:8081"
+    depends_on:
+      - server-0
+      - server-1
+      - server-2
+    restart: always
+    networks:
+      - backend
 
 networks:
   db:
