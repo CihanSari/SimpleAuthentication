@@ -50,6 +50,7 @@ services:
     networks:
       - db
       - backend
+      - gobackend
 
   crdb-init:
     container_name: crdb-init
@@ -154,6 +155,80 @@ services:
     networks:
       - backend
 
+  goserver-0:
+    container_name: goserver-0
+    image: docker-goauthserver:latest
+    volumes:
+      - ./volumes/goserver-0/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - gobackend
+
+  goserver-1:
+    container_name: goserver-1
+    image: docker-goauthserver:latest
+    volumes:
+      - ./volumes/goserver-1/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - gobackend
+
+  goserver-2:
+    container_name: goserver-2
+    image: docker-goauthserver:latest
+    volumes:
+      - ./volumes/goserver-2/logs:/tmp/app/logs
+    working_dir: /usr/app
+    environment:
+      - DB_HOST=crdb-lb
+      - DB_PORT=26257
+      - DB_NAME=auth
+      - DB_USERNAME=authUser
+      - LOG_PATH=/tmp/app/logs
+      - PORT=4000
+    depends_on:
+      - crdb-init
+    restart: always
+    networks:
+      - gobackend
+
+  goserver-lb:
+    container_name: goserver-lb
+    hostname: goserver-lb
+    image: haproxy
+    volumes:
+      - ./goserver-lb.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    ports:
+      - "4000:80"
+      - "4001:8081"
+    depends_on:
+      - goserver-0
+      - goserver-1
+      - goserver-2
+    restart: always
+    networks:
+      - gobackend
 networks:
   db:
   backend:
+  gobackend:

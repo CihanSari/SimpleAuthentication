@@ -19,10 +19,12 @@ func InitDB() {
 		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	dbConnection = conn
-	if _, err := dbConnection.Exec(
-		`DROP TABLE IF EXISTS "users";`); err != nil {
-		log.Fatalf("Failed to execute: %v\n", err.Error())
-	}
+	/* Removes current DB Content on init
+	// if _, err := dbConnection.Exec(
+	// 	`DROP TABLE IF EXISTS "users";`); err != nil {
+	// 	log.Fatalf("Failed to execute: %v\n", err.Error())
+	// }
+	*/
 	if _, err := dbConnection.Exec(
 		`CREATE TABLE IF NOT EXISTS "users"(
 		"id" SERIAL,
