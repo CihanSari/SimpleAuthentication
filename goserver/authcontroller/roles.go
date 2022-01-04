@@ -5,7 +5,7 @@ type UserRole string
 const (
 	UserLevel          UserRole = "user"
 	ModeratorLevel     UserRole = "moderator"
-	AdministratorLevel UserRole = "administrator"
+	AdministratorLevel UserRole = "admin"
 )
 
 type UserRoles []UserRole
