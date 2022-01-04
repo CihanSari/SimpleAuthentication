@@ -2,6 +2,8 @@ package authrouter
 
 import (
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 func NewRouter() http.Handler {
@@ -14,7 +16,8 @@ func NewRouter() http.Handler {
 	mux.HandleFunc("/api/moderator", modAccessHandle())
 	mux.HandleFunc("/api/admin", adminAccessHandle())
 	loggerWrappedMux := newLogger(mux)
-	return loggerWrappedMux
+	handler := cors.Default().Handler(loggerWrappedMux)
+	return handler
 }
 
 func indexPage() http.HandlerFunc {
