@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 type LoginUser struct {
